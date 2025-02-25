@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据库查询工具</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-ui@2.15.13/lib/theme-chalk/index.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        .header {
+            padding: 10px 20px;
+            background-color: #409EFF;
+            color: white;
+        }
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        .sidebar {
+            width: 250px;
+            border-right: 1px solid #e0e0e0;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        .content {
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+        }
+        .connection-form {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .table-list {
+            height: calc(100% - 200px);
+            overflow-y: auto;
+        }
+        .table-filter {
+            margin-bottom: 10px;
+        }
+        .data-table {
+            width: 100%;
+        }
+        .tab-content {
+            padding: 10px 0;
+        }
+        .sql-editor {
+            width: 100%;
+            height: 100px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app" class="app-container">
+        <div class="header">
+            <h2>数据库查询工具</h2>
+        </div>
+        
+        <div class="main-content">
+            <div class="sidebar">
+                <div class="connection-form">
+                    <h3>数据库连接</h3>
+                    <el-form :model="connectionInfo" label-width="80px" size="small">
+                        <el-form-item label="数据库类型">
+                            <el-select v-model="connectionInfo.dbType" placeholder="选择数据库类型" style="width: 100%">
+                                <el-option label="MySQL" value="MYSQL"></el-option>
+                                <el-option label="Oracle" value="ORACLE"></el-option>
+                            </el-select>
+                        </el-form-item>
+                        <el-form-item label="IP地址">
+                            <el-input v-model="connectionInfo.ip" placeholder="例如: localhost"></el-input>
+                        </el-form-item>
+                        <el-form-item label="端口">
+                            <el-input v-model.number="connectionInfo.port" placeholder="例如: 3306"></el-input>
+                        </el-form-item>
+                        <el-form-item label="用户名">
+                            <el-input v-model="connectionInfo.username" placeholder="例如: root"></el-input>
+                        </el-form-item>
+                        <el-form-item label="密码">
+                            <el-input v-model="connectionInfo.password" type="password" placeholder="输入密码"></el-input>
+                        </el-form-item>
+                        <el-form-item label="数据库名">
+                            <el-input v-model="connectionInfo.dbName" placeholder="例如: test"></el-input>
+                        </el-form-item>
+                        <el-form-item>
+                            <el-button type="primary" @click="testConnection" :loading="testingConnection">测试连接</el-button>
+                            <el-button type="success" @click="connect" :loading="connecting">连接</el-button>
+                        </el-form-item>
+                    </el-form>
+                </div>
+                
+                <div v-if="connected" class="table-list">
+                    <div class="table-filter">
+                        <el-input v-model="tableFilter" placeholder="搜索表" prefix-icon="el-icon-search" clearable></el-input>
+                    </div>
+                    <el-tree
+                        :data="filteredTables"
+                        :props="{label: 'tableName'}"
+                        @node-click="handleTableClick"
+                        node-key="tableName"
+                        highlight-current>
+                    </el-tree>
+                </div>
+            </div>
+            
+            <div class="content">
+                <div v-if="!connected" style="text-align: center; padding-top: 100px;">
+                    <h3>请先连接数据库</h3>
+                </div>
+                
+                <div v-else>
+                    <el-tabs v-model="activeTab" type="card" closable @tab-remove="removeTab">
+                        <el-tab-pane
+                            v-for="item in tabs"
+                            :key="item.name"
+                            :label="item.title"
+                            :name="item.name">
+                            <div class="tab-content">
+                                <template v-if="item.type === 'table'">
+                                    <el-tabs v-model="item.activeSubTab">
+                                        <el-tab-pane label="结构" name="structure">
+                                            <el-table :data="item.columns" border stripe>
+                                                <el-table-column prop="columnName" label="列名" width="180"></el-table-column>
+                                                <el-table-column prop="typeName" label="类型" width="120"></el-table-column>
+                                                <el-table-column prop="columnSize" label="大小" width="80"></el-table-column>
+                                                <el-table-column label="可为空" width="80">
+                                                    <template slot-scope="scope">
+                                                        {{ scope.row.nullable ? '是' : '否' }}
+                                                    </template>
+                                                </el-table-column>
+                                                <el-table-column label="主键" width="80">
+                                                    <template slot-scope="scope">
+                                                        {{ scope.row.primaryKey ? '是' : '否' }}
+                                                    </template>
+                                                </el-table-column>
+                                                <el-table-column label="外键" width="80">
+                                                    <template slot-scope="scope">
+                                                        {{ scope.row.foreignKey ? '是' : '否' }}
+                                                    </template>
+                                                </el-table-column>
+                                                <el-table-column prop="remarks" label="备注"></el-table-column>
+                                            </el-table>
+                                        </el-tab-pane>
+                                        <el-tab-pane label="数据" name="data">
+                                            <el-table :data="item.data" border stripe class="data-table">
+                                                <el-table-column
+                                                    v-for="col in item.dataColumns"
+                                                    :key="col.name"
+                                                    :prop="col.name"
+                                                    :label="col.name"
+                                                    :width="120">
+                                                </el-table-column>
+                                            </el-table>
+                                            <el-pagination
+                                                @current-change="page => loadTableData(item.tableName, page)"
+                                                :current-page="item.currentPage"
+                                                :page-size="item.pageSize"
+                                                :total="item.total"
+                                                layout="total, prev, pager, next"
+                                                style="margin-top: 10px;">
+                                            </el-pagination>
+                                        </el-tab-pane>
+                                    </el-tabs>
+                                </template>
+                                
+                                <template v-else-if="item.type === 'sql'">
+                                    <el-input
+                                        type="textarea"
+                                        :rows="5"
+                                        placeholder="输入SQL查询语句（仅支持SELECT）"
+                                        v-model="item.sql"
+                                        class="sql-editor">
+                                    </el-input>
+                                    <el-button type="primary" @click="executeSql(item)" :loading="item.executing">执行</el-button>
+                                    
+                                    <div v-if="item.result" style="margin-top: 10px;">
+                                        <el-table :data="item.result.data" border stripe class="data-table">
+                                            <el-table-column
+                                                v-for="col in item.result.columns"
+                                                :key="col.name"
+                                                :prop="col.name"
+                                                :label="col.name"
+                                                :width="120">
+                                            </el-table-column>
+                                        </el-table>
+                                        <div v-if="item.result.hasMore" style="margin-top: 10px; color: #E6A23C;">
+                                            注意：结果已被限制为最多1000条记录
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </el-tab-pane>
+                        
+                        <el-button
+                            slot="button"
+                            size="small"
+                            @click="addSqlTab"
+                            style="margin-left: 10px;">
+                            + SQL查询
+                        </el-button>
+                    </el-tabs>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/element-ui@2.15.13/lib/index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios@0.21.1/dist/axios.min.js"></script>
+    <script>
+        new Vue({
+            el: '#app',
+            data() {
+                return {
+                    connectionInfo: {
+                        dbType: 'MYSQL',
+                        ip: 'localhost',
+                        port: 3306,
+                        username: 'root',
+                        password: '',
+                        dbName: 'test'
+                    },
+                    testingConnection: false,
+                    connecting: false,
+                    connected: false,
+                    tables: [],
+                    tableFilter: '',
+                    activeTab: '',
+                    tabs: [],
+                    tabIndex: 0
+                };
+            },
+            computed: {
+                filteredTables() {
+                    if (!this.tableFilter) {
+                        return this.tables;
+                    }
+                    const filter = this.tableFilter.toLowerCase();
+                    return this.tables.filter(table => 
+                        table.tableName.toLowerCase().includes(filter)
+                    );
+                }
+            },
+            methods: {
+                // 测试数据库连接
+                testConnection() {
+                    this.testingConnection = true;
+                    axios.post('/api/database/test-connection', this.connectionInfo)
+                        .then(response => {
+                            const result = response.data;
+                            if (result.success) {
+                                this.$message.success('连接成功');
+                            } else {
+                                this.$message.error(result.message || '连接失败');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('测试连接失败', error);
+                            this.$message.error('连接失败: ' + (error.response?.data?.message || error.message));
+                        })
+                        .finally(() => {
+                            this.testingConnection = false;
+                        });
+                },
+                
+                // 连接数据库并获取表信息
+                connect() {
+                    this.connecting = true;
+                    axios.post('/api/database/tables', this.connectionInfo)
+                        .then(response => {
+                            this.tables = response.data;
+                            this.connected = true;
+                            this.$message.success('已连接到数据库，获取到 ' + this.tables.length + ' 个表');
+                            
+                            // 清空现有的标签页
+                            this.tabs = [];
+                            this.tabIndex = 0;
+                            this.activeTab = '';
+                        })
+                        .catch(error => {
+                            console.error('连接数据库失败', error);
+                            this.$message.error('连接失败: ' + (error.response?.data?.message || error.message));
+                        })
+                        .finally(() => {
+                            this.connecting = false;
+                        });
+                },
+                
+                // 点击表名
+                handleTableClick(table) {
+                    // 检查是否已经打开了这个表的标签页
+                    const existingTab = this.tabs.find(tab => tab.type === 'table' && tab.tableName === table.tableName);
+                    if (existingTab) {
+                        this.activeTab = existingTab.name;
+                        return;
+                    }
+                    
+                    // 创建新标签页
+                    const tabName = `tab-${this.tabIndex++}`;
+                    const newTab = {
+                        title: table.tableName,
+                        name: tabName,
+                        type: 'table',
+                        tableName: table.tableName,
+                        columns: table.columns || [],
+                        activeSubTab: 'structure',
+                        data: [],
+                        dataColumns: [],
+                        currentPage: 1,
+                        pageSize: 50,
+                        total: 0,
+                        loading: false
+                    };
+                    
+                    this.tabs.push(newTab);
+                    this.activeTab = tabName;
+                    
+                    // 加载表数据
+                    this.loadTableData(table.tableName, 1);
+                },
+                
+                // 加载表数据
+                loadTableData(tableName, page) {
+                    const tab = this.tabs.find(tab => tab.type === 'table' && tab.tableName === tableName);
+                    if (!tab) return;
+                    
+                    tab.loading = true;
+                    tab.currentPage = page;
+                    
+                    axios.post(`/api/database/query?tableName=${tableName}&page=${page}&pageSize=${tab.pageSize}`, this.connectionInfo)
+                        .then(response => {
+                            const result = response.data;
+                            tab.data = result.data;
+                            tab.dataColumns = result.columns;
+                            tab.total = result.total;
+                        })
+                        .catch(error => {
+                            console.error('加载表数据失败', error);
+                            this.$message.error('加载数据失败: ' + (error.response?.data?.message || error.message));
+                        })
+                        .finally(() => {
+                            tab.loading = false;
+                        });
+                },
+                
+                // 添加SQL查询标签页
+                addSqlTab() {
+                    const tabName = `tab-${this.tabIndex++}`;
+                    const newTab = {
+                        title: 'SQL查询',
+                        name: tabName,
+                        type: 'sql',
+                        sql: '',
+                        result: null,
+                        executing: false
+                    };
+                    
+                    this.tabs.push(newTab);
+                    this.activeTab = tabName;
+                },
+                
+                // 执行SQL查询
+                executeSql(tab) {
+                    if (!tab.sql.trim()) {
+                        this.$message.warning('请输入SQL查询语句');
+                        return;
+                    }
+                    
+                    tab.executing = true;
+                    
+                    axios.post(`/api/database/execute?sql=${encodeURIComponent(tab.sql)}`, this.connectionInfo)
+                        .then(response => {
+                            tab.result = response.data;
+                            if (tab.result.data.length === 0) {
+                                this.$message.info('查询结果为空');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('执行SQL查询失败', error);
+                            this.$message.error('执行失败: ' + (error.response?.data?.error || error.message));
+                        })
+                        .finally(() => {
+                            tab.executing = false;
+                        });
+                },
+                
+                // 关闭标签页
+                removeTab(targetName) {
+                    const tabs = this.tabs;
+                    let activeName = this.activeTab;
+                    
+                    if (activeName === targetName) {
+                        tabs.forEach((tab, index) => {
+                            if (tab.name === targetName) {
+                                const nextTab = tabs[index + 1] || tabs[index - 1];
+                                if (nextTab) {
+                                    activeName = nextTab.name;
+                                } else {
+                                    activeName = '';
+                                }
+                            }
+                        });
+                    }
+                    
+                    this.activeTab = activeName;
+                    this.tabs = tabs.filter(tab => tab.name !== targetName);
+                }
+            }
+        });
+    </script>
+</body>
+</html> 
