@@ -1,7 +1,5 @@
 # 数据库探索平台
 
-
-
 [![](https://img.shields.io/github/stars/mynxg/db-explorer)](https://github.com/mynxg/db-explorer/stargazers)
 [![](https://img.shields.io/github/issues/mynxg/db-explorer)](https://github.com/mynxg/db-explorer/issues)
 [![](https://img.shields.io/github/issues-closed/mynxg/db-explorer)](https://github.com/mynxg/db-explorer/issues?q=is%3Aissue+is%3Aclosed)
@@ -15,8 +13,11 @@
 
 一个智能化的数据库查询与探索工具，支持动态连接MySQL和Oracle数据库，实现表结构和数据的可视化查询与分析。
 
+![image-20250226203426308](./asset/image-20250226203426308.png)
 
-![数据库查询工具截图](screenshot.png)
+![image-20250226203548713](./asset/image-20250226203548713.png)
+
+
 
 
 ## 功能特点

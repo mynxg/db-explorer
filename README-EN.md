@@ -10,7 +10,10 @@
 
 An intelligent database query and exploration tool that supports dynamic connections to MySQL and Oracle databases, enabling visualization of table structures and data for querying and analysis.
 
-![Database Query Tool Screenshot](screenshot.png)
+![image-20250226203426308](./asset/image-20250226203426308.png)
+
+![image-20250226203548713](./asset/image-20250226203548713.png)
+
 
 ## Features
 
