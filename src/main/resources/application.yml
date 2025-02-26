@@ -1,8 +1,8 @@
 
 # 项目相关配置
-schema-pilot:
+db-explorer:
   # 名称
-  name: schema-pilot
+  name: db-explorer
   # 版本
 #  version: ${revision}
   # 版权年份
@@ -11,7 +11,7 @@ schema-pilot:
 # 开发环境配置
 server:
   # 服务器的HTTP端口，默认为8080
-  port: 8080
+  port: 8076
   servlet:
     # 应用的访问路径
     context-path: /
@@ -33,8 +33,7 @@ server:
 # Spring配置
 spring:
   application:
-#    name: ${ruoyi.name}
-    name: schpilot
+    name: ${db-explorer.name}
   threads:
     # 开启虚拟线程 仅jdk21可用
     virtual:
@@ -87,78 +86,10 @@ mybatis-plus:
       # 如需改为自增 需要将数据库表全部设置为自增
       idType: ASSIGN_ID
 
-# 数据加密80
-mybatis-encryptor:
-  # 是否开启加密
-  enable: false
-  # 默认加密算法
-  algorithm: BASE64
-  # 编码方式 BASE64/HEX。默认BASE64
-  encode: BASE64
-  # 安全秘钥 对称算法的秘钥 如：AES，SM4
-  password:
-  # 公私钥 非对称算法的公私钥 如：SM2，RSA
-  publicKey:
-  privateKey:
 
 
-# 防止XSS攻击
-xss:
-  # 过滤开关
-  enabled: true
-  # 排除链接（多个用逗号分隔）
-  excludeUrls:
-    - /system/notice
-    - /warm-flow/save-xml
 
-# 全局线程池相关配置
-# 如使用JDK21请直接使用虚拟线程 不要开启此配置
-thread-pool:
-  # 是否开启线程池
-  enabled: false
-  # 队列最大长度
-  queueCapacity: 128
-  # 线程池维护线程所允许的空闲时间
-  keepAliveSeconds: 300
 
---- # 分布式锁 lock4j 全局配置
-lock4j:
-  # 获取分布式锁超时时间，默认为 3000 毫秒
-  acquire-timeout: 3000
-  # 分布式锁的超时时间，默认为 30 秒
-  expire: 30000
 
---- # Actuator 监控端点的配置项
-management:
-  endpoints:
-    web:
-      exposure:
-        include: '*'
-  endpoint:
-    health:
-      show-details: ALWAYS
-    logfile:
-      external-file: ./logs/sys-console.log
 
---- # 默认/推荐使用sse推送
-sse:
-  enabled: true
-  path: /resource/sse
 
---- # websocket
-websocket:
-  # 如果关闭 需要和前端开关一起关闭
-  enabled: false
-  # 路径
-  path: /resource/websocket
-  # 设置访问源地址
-  allowedOrigins: '*'
-
---- # warm-flow工作流配置
-warm-flow:
-  # 是否开启工作流，默认true
-  enabled: true
-  # 是否开启设计器ui
-  ui: true
-  # 默认Authorization，如果有多个token，用逗号分隔
-  token-name: ${sa-token.token-name},clientid
