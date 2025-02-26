@@ -1,10 +1,11 @@
 package cn.com.nxg.model;
 
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 
 
 @Data
@@ -28,16 +29,48 @@ public class DatabaseConnectionInfo {
     private String dbName;
     
     @NotBlank(message = "数据库类型不能为空")
-    private String dbType; // MYSQL 或 ORACLE
+    private String dbType; // 使用 DatabaseType 中的值
     
-    // 生成连接URL
+    // 扩展数据库类型枚举
+    public enum DatabaseType {
+        MYSQL,
+        ORACLE,
+        POSTGRESQL,
+        SQLSERVER,
+        DB2,
+        SQLITE,
+        MARIADB,
+        H2,
+        HIVE,
+        CLICKHOUSE
+    }
+    
+    // 修改 getJdbcUrl 方法支持更多数据库
     public String getJdbcUrl() {
-        if ("MYSQL".equalsIgnoreCase(dbType)) {
-            return String.format("jdbc:mysql://%s:%d/%s?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC", 
-                    ip, port, dbName);
-        } else if ("ORACLE".equalsIgnoreCase(dbType)) {
-            return String.format("jdbc:oracle:thin:@%s:%d:%s", ip, port, dbName);
+        switch (DatabaseType.valueOf(dbType.toUpperCase())) {
+            case MYSQL:
+                return String.format("jdbc:mysql://%s:%d/%s?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC", 
+                        ip, port, dbName);
+            case ORACLE:
+                return String.format("jdbc:oracle:thin:@%s:%d:%s", ip, port, dbName);
+            case POSTGRESQL:
+                return String.format("jdbc:postgresql://%s:%d/%s", ip, port, dbName);
+            case SQLSERVER:
+                return String.format("jdbc:sqlserver://%s:%d;databaseName=%s", ip, port, dbName);
+            case DB2:
+                return String.format("jdbc:db2://%s:%d/%s", ip, port, dbName);
+            case SQLITE:
+                return String.format("jdbc:sqlite:%s", dbName);
+            case MARIADB:
+                return String.format("jdbc:mariadb://%s:%d/%s", ip, port, dbName);
+            case H2:
+                return String.format("jdbc:h2:tcp://%s:%d/%s", ip, port, dbName);
+            case HIVE:
+                return String.format("jdbc:hive2://%s:%d/%s", ip, port, dbName);
+            case CLICKHOUSE:
+                return String.format("jdbc:clickhouse://%s:%d/%s", ip, port, dbName);
+            default:
+                throw new IllegalArgumentException("不支持的数据库类型: " + dbType);
         }
-        throw new IllegalArgumentException("不支持的数据库类型: " + dbType);
     }
 } 

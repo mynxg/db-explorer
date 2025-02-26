@@ -5,12 +5,12 @@ import cn.com.nxg.model.TableInfo;
 import cn.com.nxg.service.DatabaseConnectionManager;
 import cn.com.nxg.service.DataQueryService;
 import cn.com.nxg.service.MetadataService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
