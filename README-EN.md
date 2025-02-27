@@ -57,6 +57,8 @@ Open the project in IntelliJ IDEA and run it
 
 Web application: [db-explorer-web](https://github.com/mynxg/db-explorer-web)
 
+![](./asset/screenshots.gif)
+
 ## Contributing
 
 Contributions of code, issue reports, or improvement suggestions are welcome!

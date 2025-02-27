@@ -70,7 +70,8 @@ Idea打开项目，运行项目
 
 web应用：[db-explorer-web](https://github.com/mynxg/db-explorer-web)
 
-
+效果：
+![](./asset/screenshots.gif)
 
 
 ## 贡献
